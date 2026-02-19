@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 import numpy as np
+from dataclasses import dataclass
 #  ----> RANDOM TDMA PROTOCOL ATTEMPT 1 ----
+
+
+
+
+
+
+@dataclass
+class Packet:
+	packet_id : int
+	rx_id : str
+
+
+
+#------
 
 class Tx():
 	def __init__(self,L):
@@ -19,14 +34,14 @@ class Rx():
 	def __init__(self):
 		self.rx_uid = "";
 		self.assigned_channel = '';
-		self.buffer_recieved=[];
-		self.buffer_waiting =[];
+		self.waiting =0;
+		self.buffer_received = []
 	def Receive_buffer(self,Packets : list):
 		for packet in Packets:
-			if paket.uid == self.Rx_uid:
-				self.buffer.append(packet);
+			if packet.rx_id == self.Rx_uid:
+				self.waiting -= 1;
 			else:
-				self.bin.append(packet);
+				raise Exception(f' Receiver {rx_uid} got a packet for {packet.uid}');
 	def success_ratio(self,Packets):
 		return len(Packets)/len(self.buffer);
 	def failure_ratio(self,Packets):
@@ -94,7 +109,7 @@ class Generate_System():
 #print("\n\n B set : \n " , B);
 
 
-def RANDOM_TDMA(w,devices):
+def RANDOM_TDMA(w,devices) -> dict:
 	ch , A = Generate_System().make_omega(w),Generate_System().make_Alpha(w,devices);
 	assigned = {};
 	chosen= [];
@@ -128,40 +143,50 @@ def RANDOM_TDMA(w,devices):
 #_--------------------------------------------------------------------
 #	WE NEED TO : 
 #		A) 
-#		- make a packet generator with (destination_id,count_of_same_id) (one of the RX) each has equal prob
-#		- run generator that makes a random number (x-5000+x) with x big.
-#		- do it 10 times and sum counters for each id and send that to Rx_waiting and save packets in large queue; 
+#		[V] - make a packet generator with (destination_id,count_of_same_id) (one of the RX) each has equal prob
+#		[V] - run generator that makes a random number (x-5000+x) with x big.
+#		[V] - do it 10 times and sum counters for each id and send that to Rx_waiting and save packets in large queue; 
 #
-#		B)
-#		- each t_i all Tx buffers must be full before sending --> send , see empty spots of each , grab from large queue and fill them up.
+#		B) (aka make teh star);
+#		- each t_i all Tx buffers must be full before sending 
+#		- send , see empty spots of each , grab from large queue and fill them up.
 #		- send packets , if rx receives a packets check if id is correct and remove from the waiting counter
 #
 #		C) 
 #		- count total_packets_send in this t_i  and success_ratio (tot_packets_send/8_buffers)  ,total_waiting(8*L - tot_pack_send) and failure ratio (1-success)
 #		- plot (succ- t_i) (failure - t_i).
-#		- check if all rx_waiting = 0 to end simulation.
+#		- check if all rx_waiting <= 0 to end simulation.
 #_--------------------------------------------------------------------
 ## MAKE A PACKET MA DUDE  MUST HAVE A TX_assigned and an RX sending
 ## THEN WE NEED TO TAKE THE TX_ASSIGNED,
 
 
-def Generate_await_buffers_in_rx(seed,min_packets,max_packets):
+# is this retarde???
+def fill_await(rx , count) ->  None:
+	rx.waiting = count
+
+def Generate_buffers_for_tx(rx,min_packets,max_packets,Long_queue) -> list:
+	n = np.random.randint(min_packets,max_packets);
+	buffer = []
+	queue = [];
+	c = 0;
+	for i in range(n):
+		p = Packet(packet_id = c,rx_id = rx.rx_uid)
+		buffer.append(p);
+		c+=1;
+	fill_await(rx,c);
+	Long_queue += buffer
+	return Long_queue;
+
+
 	
 
 
-
-
-
-def make_large_Packet_queue():
-
-class Run_simulation()
-	def __init__(self,L):
+class Run_simulation():
+	def __init__(self,L,stepz):
 		self.large_queue = make_large_Packet_queue();
 		self.Tx_buffer_length = L
-	def replenish_tx();
-	def send_packets();
-	def count_in_tti();
-	def plot_results??????
+		self.stepz_remaining = stepz;
 
 
 
@@ -169,6 +194,15 @@ class Run_simulation()
 if __name__ == "__main__" :
 
 	w ,devices = 4,8 
-	for i in range(10):
-		print(i,RANDOM_TDMA(w,devices));
-	
+	rx = Generate_System().make_Rx(8)
+	l_q =[]
+	t = 0
+	#for i in range(len(rx)):
+	#	print(i,RANDOM_TDMA(w,devices));
+	#	Generate_buffers_for_tx(rx[i],100,150,l_q);
+
+	#for i in range(len(rx)):
+	#	t += rx[i].waiting
+	#	print(rx[i].rx_uid," ",rx[i].waiting ,t, len(l_q), end =" ");
+	#for i in range(200):
+	#	print(l_q[i].packet_id,l_q[i].rx_id);	
