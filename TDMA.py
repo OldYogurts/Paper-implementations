@@ -1,22 +1,13 @@
 #!/usr/bin/env python3
 import numpy as np
+import random
 from dataclasses import dataclass
 #  ----> RANDOM TDMA PROTOCOL ATTEMPT 1 ----
-
-
-
-
-
-
 @dataclass
 class Packet:
 	packet_id : int
 	rx_id : str
-
-
-
 #------
-
 class Tx():
 	def __init__(self,L):
 		self.tx_uid = "";
@@ -26,14 +17,15 @@ class Tx():
 		for packet in Packets:
 			self.buffer.append(packet);
 			if (len(self.buffer) > self.Buff_len):
-				raise Exception(f'EXCEPTION:  {self.TX_uid} BUFFER OVERFLOW , packets are more than {self.Buff_len}')   
+				raise Exception(f'EXCEPTION:  {self.tx_uid} BUFFER OVERFLOW , packets are more than {self.Buff_len}')   
 				break;
 		return self.buffer
+	def remove(self,packet):
+		self.buffer.remove(packet);
 		
 class Rx():
 	def __init__(self):
 		self.rx_uid = "";
-		self.assigned_channel = '';
 		self.waiting =0;
 		self.buffer_received = []
 	def Receive_buffer(self,Packets : list):
@@ -61,10 +53,10 @@ class Generate_System():
 		# MAKE THIS INTO OBJECTS TX RX 
 		# TX HAS A BUFFER L and a UID TX_i
 		# RX HAS A BUFFER INF_L  and UID RX_i
-	def make_Tx(self,N):
+	def make_Tx(self,N,L):
 		for i in range(N):
 			t = f'tx{i}';
-			tx = Tx(10);
+			tx = Tx(L);
 			tx.tx_uid = t
 			self.T.append(tx);
 		return self.T;
@@ -78,27 +70,24 @@ class Generate_System():
 		return self.R;
 	# TODO 
 
-	def make_omega(self,N):
-		for i in range(N):
+	def make_omega(self,w):
+		for i in range(w):
 			ch = f'λ{i}';
 			self.omega.append(ch);
 		return self.omega;
 	
-	def make_Alpha(self,N,t):
-		self.make_omega(N)
-		T = self.make_Tx(t);
+	def make_Alpha(self):
+		T = self.T;
 		M = len(self.omega)
 		for i in range(M):
 			self.A[self.omega[i]] = T
 		return self.A;
-	def make_Beta(self,N,r):
-		self.make_omega(N);
-		R = self.make_Rx(r);
+	def make_Beta(self):
+		R = self.R;
 		M = len(self.omega);
 		c = 0;
 		for i in range(M):
-			R[c].assigned_channel = self.omega[i];
-			R[c+1].assigned_channel =self.omega[i];
+			self.B[self.omega[i]] = [R[c],R[c+1]];
 			c+=2;
 		return self.B
 	
@@ -108,64 +97,16 @@ class Generate_System():
 #print("\n\n A BIG :\n " , A);
 #print("\n\n B set : \n " , B);
 
+### FUNK
+ 
+##### LONG QUEUE 
 
-def RANDOM_TDMA(w,devices) -> dict:
-	ch , A = Generate_System().make_omega(w),Generate_System().make_Alpha(w,devices);
-	assigned = {};
-	chosen= [];
-	while (len(ch) > 0):
-		om = len(ch);
-		pk = (np.random.randint(0,om));
-		txx = len(A[ch[pk]])
-		while(True):
-			
-			mk = np.random.randint(0,txx);
-			ass = A[ch[pk]][mk];
-			if ass not in chosen:
-				break;
-		chosen.append(A[ch[pk]][mk]);
-		
-		assigned[A[ch[pk]][mk].tx_uid] = ch[pk]
-		del ch[pk]
-	return assigned
-
-	
-
-	
-#_--------------------------------------------------------------------
-#	UP TO NOW WE HAVE : 
-#		--> 8 nodes with Tx_uid 
-#		--> 8 nodes with RX_uid
-#		--> a way to assighn channels to Tx_uids
-#_--------------------------------------------------------------------a
-
-	
-#_--------------------------------------------------------------------
-#	WE NEED TO : 
-#		A) 
-#		[V] - make a packet generator with (destination_id,count_of_same_id) (one of the RX) each has equal prob
-#		[V] - run generator that makes a random number (x-5000+x) with x big.
-#		[V] - do it 10 times and sum counters for each id and send that to Rx_waiting and save packets in large queue; 
-#
-#		B) (aka make teh star);
-#		- each t_i all Tx buffers must be full before sending 
-#		- send , see empty spots of each , grab from large queue and fill them up.
-#		- send packets , if rx receives a packets check if id is correct and remove from the waiting counter
-#
-#		C) 
-#		- count total_packets_send in this t_i  and success_ratio (tot_packets_send/8_buffers)  ,total_waiting(8*L - tot_pack_send) and failure ratio (1-success)
-#		- plot (succ- t_i) (failure - t_i).
-#		- check if all rx_waiting <= 0 to end simulation.
-#_--------------------------------------------------------------------
-## MAKE A PACKET MA DUDE  MUST HAVE A TX_assigned and an RX sending
-## THEN WE NEED TO TAKE THE TX_ASSIGNED,
-
-
-# is this retarde???
+# is this retarded???
+# i fill the amount expected in each rx depending on the number of packets generated with the rx id as sender
 def fill_await(rx , count) ->  None:
 	rx.waiting = count
 
-def Generate_buffers_for_tx(rx,min_packets,max_packets,Long_queue) -> list:
+def Generate_buffers_to_send(rx,min_packets,max_packets) -> list:
 	n = np.random.randint(min_packets,max_packets);
 	buffer = []
 	queue = [];
@@ -175,31 +116,110 @@ def Generate_buffers_for_tx(rx,min_packets,max_packets,Long_queue) -> list:
 		buffer.append(p);
 		c+=1;
 	fill_await(rx,c);
-	Long_queue += buffer
-	return Long_queue;
+	return buffer;
 
+def Generate_long_queue(rx,min_packets,max_packets,devices) -> list:
+	Long_queue = []
+	for i in range(devices):
+		buf = Generate_buffers_to_send(rx[i],min_packets,max_packets)
+		Long_queue += buf
+	random.shuffle(Long_queue);
+	return Long_queue
+###############
+############### FILL TX BUFFER
+def grab_from_queue(lq,L) -> list:
+	buf = lq[0:L];
+	del lq[0:L];
+	#print(len(lq));
+	return buf
 
+def shift_packets(L,tx) -> int:
+	space = 0;
+	for i in range(len(tx.buffer)):
+		if tx.buffer[i] != None:
+			L -=1
+	space = L
+	#print(space);
+	return space
+			
 	
+def FILL_TX_BUFFER(Long_queue,tx,devices,L) -> None:
+	for i in range(devices):
+		spaces = shift_packets(L,tx[i]);
+		packets = grab_from_queue(Long_queue,spaces)
+		tx[i].Fill_buffer(packets)
+
+###############
+############### LE protocolz
+def RANDOM_TDMA(w,devices,ch,A) -> dict:
+	assigned = {};
+	chosen= [];
+	for i in range(len(ch)):
+		while(True):
+			txx = np.random.randint(0,devices-1)
+			if A[ch[i]][txx] not in chosen:
+				assigned[A[ch[i]][txx]] = ch[i];
+				chosen.append(A[ch[i]][txx]);					
+				break
+	return assigned
+
+###############
+###############  SENDER;
+
+def send(tx , reachable_rx) -> None:
+	rx = [rx.rx_uid for rx in reachable_rx]
+	for p in tx.buffer:
+		if p.rx_id in rx:
+			if p.rx_id == reachable_rx[0].rx_uid:
+				reachable_rx[0].buffer_received.append(p);
+				
+			
+				print('0',p.rx_id);
+			else:
+				reachable_rx[1].buffer_received.append(p)
+				print('1',p.rx_id);
+			print('a',tx.buffer,len(tx.buffer));
+			tx.remove(p);
+			print('b',tx.buffer,len(tx.buffer));
+		else :
+			continue;
+					
+###############
+###############  LE star??
+
+def Star(w,dev,omega,alpha,beta,Long_buffer):
+		d = RANDOM_TDMA(w,dev,omega,alpha)
+		for k,v in d.items():
+			send(k,beta[v]);
 
 
-class Run_simulation():
-	def __init__(self,L,stepz):
-		self.large_queue = make_large_Packet_queue();
-		self.Tx_buffer_length = L
-		self.stepz_remaining = stepz;
+
+
+
+
+
+
 
 
 
 
 if __name__ == "__main__" :
 
-	w ,devices = 4,8 
-	rx = Generate_System().make_Rx(8)
-	l_q =[]
-	t = 0
-	#for i in range(len(rx)):
-	#	print(i,RANDOM_TDMA(w,devices));
-	#	Generate_buffers_for_tx(rx[i],100,150,l_q);
+	w ,devices ,L = 4,8,10
+	g = Generate_System();
+	tx = g.make_Tx(devices,L);
+	rx = g.make_Rx(devices);
+	omega = g.make_omega(w);
+	alpha = g.make_Alpha();
+	beta = g.make_Beta();
+	Long_queue  = Generate_long_queue(rx,1000,1500,devices);
+	for i in range(10000):
+			FILL_TX_BUFFER(Long_queue,tx,devices,L);
+			Star(w,devices,omega,alpha,beta,Long_queue)	
+	print('\n\n\n')
+
+	for r in rx:
+		print('\n\n\n',r.rx_uid,'\n',r.waiting,len(r.buffer_received),'\n')
 
 	#for i in range(len(rx)):
 	#	t += rx[i].waiting
