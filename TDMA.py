@@ -130,7 +130,6 @@ def Generate_long_queue(rx,min_packets,max_packets,devices) -> list:
 def grab_from_queue(lq,L) -> list:
 	buf = lq[0:L];
 	del lq[0:L];
-	#print(len(lq));
 	return buf
 
 def shift_packets(L,tx) -> int:
@@ -139,7 +138,6 @@ def shift_packets(L,tx) -> int:
 		if tx.buffer[i] != None:
 			L -=1
 	space = L
-	#print(space);
 	return space
 			
 	
@@ -156,7 +154,7 @@ def RANDOM_TDMA(w,devices,ch,A) -> dict:
 	chosen= [];
 	for i in range(len(ch)):
 		while(True):
-			txx = np.random.randint(0,devices-1)
+			txx = np.random.randint(0,devices)
 			if A[ch[i]][txx] not in chosen:
 				assigned[A[ch[i]][txx]] = ch[i];
 				chosen.append(A[ch[i]][txx]);					
@@ -174,13 +172,10 @@ def send(tx , reachable_rx) -> None:
 				reachable_rx[0].buffer_received.append(p);
 				
 			
-				print('0',p.rx_id);
 			else:
 				reachable_rx[1].buffer_received.append(p)
-				print('1',p.rx_id);
-			print('a',tx.buffer,len(tx.buffer));
+
 			tx.remove(p);
-			print('b',tx.buffer,len(tx.buffer));
 		else :
 			continue;
 					
@@ -212,14 +207,10 @@ if __name__ == "__main__" :
 	omega = g.make_omega(w);
 	alpha = g.make_Alpha();
 	beta = g.make_Beta();
-	Long_queue  = Generate_long_queue(rx,1000,1500,devices);
-	for i in range(10000):
+	Long_queue  = Generate_long_queue(rx,15,20,devices);
+	for i in range(30):
 			FILL_TX_BUFFER(Long_queue,tx,devices,L);
 			Star(w,devices,omega,alpha,beta,Long_queue)	
-	print('\n\n\n')
-
-	for r in rx:
-		print('\n\n\n',r.rx_uid,'\n',r.waiting,len(r.buffer_received),'\n')
 
 	#for i in range(len(rx)):
 	#	t += rx[i].waiting
