@@ -132,6 +132,9 @@ def grab_from_queue(lq,L) -> list:
 	del lq[0:L];
 	return buf
 
+
+
+
 def shift_packets(L,tx) -> int:
 	space = 0;
 	for i in range(len(tx.buffer)):
@@ -182,20 +185,18 @@ def send(tx , reachable_rx) -> None:
 ###############
 ###############  LE star??
 
-def Star(w,dev,omega,alpha,beta,Long_buffer):
+def Star(w,dev,omega,alpha,beta):
 		d = RANDOM_TDMA(w,dev,omega,alpha)
 		for k,v in d.items():
+			print(k.tx_uid,beta[v][0].rx_uid,beta[v][1].rx_uid);
 			send(k,beta[v]);
 
 
-
-
-
-
-
-
-
-
+def run_sim(steps,tx,rx,omega,alpha,beta):
+	Long_queue  = Generate_long_queue(rx,15,20,devices);
+	for i in range(steps):
+			FILL_TX_BUFFER(Long_queue,tx,devices,L);
+			Star(w,devices,omega,alpha,beta)	
 
 
 if __name__ == "__main__" :
@@ -207,12 +208,10 @@ if __name__ == "__main__" :
 	omega = g.make_omega(w);
 	alpha = g.make_Alpha();
 	beta = g.make_Beta();
-	Long_queue  = Generate_long_queue(rx,15,20,devices);
-	for i in range(30):
-			FILL_TX_BUFFER(Long_queue,tx,devices,L);
-			Star(w,devices,omega,alpha,beta,Long_queue)	
 
-	#for i in range(len(rx)):
+	run_sim(100,tx,rx,omega,alpha,beta);
+
+		#for i in range(len(rx)):
 	#	t += rx[i].waiting
 	#	print(rx[i].rx_uid," ",rx[i].waiting ,t, len(l_q), end =" ");
 	#for i in range(200):
