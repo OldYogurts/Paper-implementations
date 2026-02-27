@@ -229,7 +229,7 @@ def Calculate_metrics(metrics:list[object],rx:list[object],steps:int) ->list[int
 	tp /=steps
 	qLen /=8
 	delay = sum(di)/len(di)
-	print(f'throughput :{tp}\tdelay: {delay}\tqlen : {qLen}\t Gaylay: {qLen/tp}\n ')	
+	print(f'throughput :{tp}\tdelay: {delay}\tqlen : {qLen}\n ')	
 	return [tp,delay,qLen];
 
 
