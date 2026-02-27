@@ -290,26 +290,29 @@ def plotter_scatter(metrics,use_3d = 1):
 #    plt.show()
 #
 
+def make_system(system):
+	g = Generate_system();
+	tx = g.Make_tx(system)
+	rx = g.Make_rx(system)	
+	omega = g.Make_omega(system)
+	alpha = g.Make_alpha()
+	beta = g.Make_beta()
+	metrics = g.Make_metrics(system);
+	l = generate_long_queue(system,rx);
+
+	return tx,rx,omega,alpha,beta,metrics,l
 
 
 
 
-if __name__ == '__main__':
-	setMIN_PACKETS_PER_RX(System3,5000);
-	setMAX_PACKETS_PER_RX(System3,10000);
+def run_simulation(system,points,steps,min_packets,max_packets):
+	setMIN_PACKETS_PER_RX(System3,min_packets/8);
+	setMAX_PACKETS_PER_RX(System3,max_packets/8);
 	met_list = []
 	setSystemL(System3,4);
-	for m in range(1,100):
+	for m in range(1,points):
+		tx,rx,omega,alpha,beta,metrics,l = make_system(System3)
 		setPoisson(System3,(m)*0.01)
-		g = Generate_system();
-		tx = g.Make_tx(System3)
-		rx = g.Make_rx(System3)	
-		omega = g.Make_omega(System3)
-		alpha = g.Make_alpha()
-		beta = g.Make_beta()
-		metrics = g.Make_metrics(System3);
-		l = generate_long_queue(System3,rx);
-		steps = 1000
 		for i in range(steps):
 			#print(f'\n\n {i} \n\n');
 			d =RANDOM_TDMA(System3,omega,alpha);
@@ -321,3 +324,6 @@ if __name__ == '__main__':
 
 
 
+if __name__ == '__main__':
+
+	run_simulation(System3,100,1000,15000,30000);
